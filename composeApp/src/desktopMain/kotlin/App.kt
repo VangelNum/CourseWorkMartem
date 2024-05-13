@@ -63,12 +63,13 @@ fun App() {
         val sectionAResList = remember { mutableStateListOf<Int>().apply { repeat(32) { add(0) } } }
         val sectionBResList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
         val sectionCResList = remember { mutableStateListOf<Int>().apply { repeat(32) { add(0) } } }
-        val registerCounterResData = remember { mutableStateListOf<Int>().apply { repeat(4) { add(0) } } }
+        val registerCounterResData =
+            remember { mutableStateListOf<Int>().apply { repeat(4) { add(0) } } }
 
         val A = remember { mutableStateOf(0u) }
         val AM = remember { mutableStateOf<UInt>(0U) }
         val B = remember { mutableStateOf<UInt>(0U) }
-        val BM = remember { mutableStateOf<ULong>(0UL) }
+        val BM = remember { mutableStateOf<UInt>(0U) }
         val C = remember { mutableStateOf<ULong>(0UL) }
         val CR = remember { mutableStateOf<Byte>(0) }
 
@@ -213,6 +214,7 @@ fun App() {
                             if (testValue.value == 0) {
                                 A.value = getValueDouble(sectionAList)
                                 B.value = getValueDouble(sectionBList)
+                                BM.value = B.value
                                 testValue.value = 1
                             }
                             marker.runMP()
@@ -252,7 +254,7 @@ class CommandMarker(
     private val A: MutableState<UInt>,
     private val AM: MutableState<UInt>,
     private val B: MutableState<UInt>,
-    private val BM: MutableState<ULong>,
+    private val BM: MutableState<UInt>,
     private val C: MutableState<ULong>,
     private val CR: MutableState<Byte>,
     private val sectionAList: SnapshotStateList<Int>,
@@ -273,28 +275,6 @@ class CommandMarker(
             list[col] = (valX % 2UL).toInt()
             valX = valX shr 1
         }
-
-//        var binaryValue = value.toString(2)
-//        binaryValue = binaryValue.padStart(list.size, '0') // Дополнение нулями до нужной длины
-//        for (index in binaryValue.indices) {
-//            list[index] = binaryValue[index].toString().toInt()
-//        }
-
-
-
-//        val binaryString = value.toString(2)
-//
-//        // Если длина бинарной строки больше, чем размер списка, обрежьте ее до нужной длины
-//        val truncatedBinaryString = if (binaryString.length > list.size) {
-//            binaryString.substring(binaryString.length - list.size)
-//        } else {
-//            binaryString
-//        }
-//
-//        // Запишите значения в список
-//        truncatedBinaryString.forEachIndexed { index, char ->
-//            list[index] = char.toString().toInt()
-//        }
     }
 
     private fun x1(): Boolean {
@@ -318,19 +298,21 @@ class CommandMarker(
 
     private fun x5(): Boolean {
         //B(0)
-        return (B.value % 2U == 1U)
+        return (BM.value % 2U == 1U)
     }
 
     private fun x6(): Boolean {
         //B(0) ⊕ B(1)
-        val b0 = (B.value % 2U == 1U) // B(0)
-        val b1 = (((B.value shr 1) % 2U) == 1U) // B(1)
-        return b0 xor b1
+        val b0 = (BM.value % 2U == 1U) // B(0)
+        val b1 = (((BM.value shr 1) % 2U) == 1U) // B(1)
+        //Операция XOR возвращает true (или 1), если один из операндов равен true (или 1), но не оба.
+        val result = b0 xor b1
+        return result
     }
 
     private fun x7(): Boolean {
         // B(1)
-        return (((B.value shr 1) % 2U) == 1U)
+        return (((BM.value shr 1) % 2U) == 1U)
     }
 
     private fun x8(): Boolean {
@@ -350,81 +332,163 @@ class CommandMarker(
 
     private fun x11(): Boolean {
         // C(31)
+        println(C.value)
+        val result = ((C.value shr 31) % 2UL) == 1UL
+        println(result)
         return (((C.value shr 31) % 2UL) == 1UL)
-    }
-
-    private fun y1() {
-        //C:=0
-        C.value = 0UL
-        setDgvs(C.value.toUInt(), sectionCResList)
-    }
-
-    private fun y2() {
-        // СЧ:=15
-        CR.value = 15
-        setDgvs(CR.value.toUInt(), registerCounterResData)
-    }
-
-    private fun y3() {
-        //AM(31:30):=A(15) A(15)
-        val bit15 = (A.value shr 15) % 2U
-        val bit31 = bit15.shl(31)
-        val bit30 = bit15.shl(27)
-        AM.value = (AM.value and 0x3FFFFFFFU) or bit31 or bit30
-        println(AM.value)
-        setDgvs(AM.value, sectionAResList)
-    }
-
-    private fun y4() {
-        // AM(29:15) := 0
-        val mask: UInt = ((1u shl 15) - 1u) and ((1u shl 30) - 1u)
-        // Применяем инвертированную маску к AM
-        AM.value = AM.value and mask.inv()
-    }
-
-    private fun y5() {
-        // AM(14:0) := A(14:0)
-//        val mask = 0x00007FFFU
-//        AM.value = (AM.value and (mask.inv())) or (A.value and mask)
-//        setDgvs(AM.value, sectionAResList)
-    }
-
-    private fun y6() {
-        // AM(29:15):=A̅M̅(29:15)
-    }
-
-    private fun y7() {
-        // C:=C+A̅M̅+1
-    }
-
-    private fun y8() {
-        // A̅M̅:=L1(AM.0)
-    }
-    private fun y9() {
-        // B:=R1(0.B)
-        BM.value = (B.value shr 1 and 0x1FFFFU).toULong()
-        setDgvs(BM.value.toUInt(), sectionBResList)
-    }
-    private fun y10() {
-        // CЧ:=CЧ-1
-        CR.value--
-        setDgvs(CR.value.toUInt(), registerCounterResData)
-    }
-    private fun y11() {
-        // C:=C+AM
-    }
-    private fun y12() {
-        // C(29:0)=C̅(29:0)+1
-    }
-    private fun y13() {
-        // C(30:16)=С(29:15)+1
-    }
-    private fun y14() {
-        // C(30:16)=C̅(30:16)+1
     }
 
     private fun y0() {
         run.value = false
+    }
+
+    private fun updateListFromBinaryValue(value: ULong, list: MutableList<Int>) {
+        val binaryString = value.toString(2)
+
+        var i = list.size - 1
+        var j = binaryString.length - 1
+
+        while (i >= 0 && j >= 0) {
+            list[i] = binaryString[j].toString().toInt()
+            i--
+            j--
+        }
+    }
+
+    private fun updateListFromByteValue(value: Byte, list: MutableList<Int>) {
+        val binaryString = value.toString(2).padStart(4, '0')
+        binaryString.forEachIndexed { index, char ->
+            list[index] = char.toString().toInt()
+        }
+    }
+
+    private fun y1() {
+        // Reset C to 0
+        C.value = 0UL
+        updateListFromBinaryValue(C.value, sectionCResList)
+    }
+
+    private fun y2() {
+        // Set CR to 15
+        CR.value = 15
+        updateListFromByteValue(CR.value, registerCounterResData)
+    }
+
+    private fun y3() {
+        // Set AM(31:30) to A(15) A(15)
+        val bit15 = (A.value shr 15) % 2U
+        val bit31 = bit15.shl(31)
+        val bit30 = bit15.shl(30)
+        AM.value = AM.value or bit31 or bit30
+        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
+    }
+
+    private fun y4() {
+        // AM(29:15): = 0
+        AM.value = AM.value and 0xC0007FFFU
+        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
+    }
+
+    private fun y5() {
+        // AM(14:0) := A(14:0)
+        val lower15BitsA = A.value and 0x7FFFU
+        AM.value = (AM.value and 0xFFFF8000U) or lower15BitsA
+        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
+    }
+
+    private fun y6() {
+        // AM(29:15):=A̅M̅(29:15)
+        val invertedUpper15BitsAM = AM.value.inv() and 0xFFFF8000U
+        AM.value = (AM.value and 0x7FFFU) or invertedUpper15BitsAM
+        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
+    }
+
+    private fun y7() {
+        // C:=C+A̅M̅+1
+        // Calculate inverted A̅M̅
+        val invertedAM = AM.value.inv()
+        // Add 1 to invertedAM
+        val invertedAMPlusOne = (invertedAM + 1U)
+        // Add invertedAMPlusOne to C
+        C.value = C.value + invertedAMPlusOne.toULong()
+        // Update sectionCResList with the new value of C
+        updateListFromBinaryValue(C.value, sectionCResList)
+    }
+
+    private fun y8() {
+        // AM:=L1(AM.0)
+        // Shift bits of AM one position to the left
+        val shiftedAM = (AM.value shl 1)
+
+        // Set the least significant bit of shiftedAM to 0
+        val newAM = shiftedAM and 0xFFFFFFFEU
+        // Update AM
+        AM.value = newAM
+        // Update sectionAResList with the new value of AM
+        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
+    }
+
+    private fun y9() {
+        // Сдвигаем все биты на одну позицию вправо и добавляем слева 0
+        BM.value = BM.value shr 1
+        updateListFromBinaryValue(BM.value.toULong(), sectionBResList)
+    }
+
+    private fun y10() {
+        CR.value = (CR.value - 1).toByte()
+        updateListFromByteValue(CR.value, registerCounterResData)
+    }
+
+    private fun y11() {
+        // C:=C+AM
+        val result = C.value + AM.value.toULong()
+        C.value = result
+        updateListFromBinaryValue(C.value, sectionCResList)
+    }
+
+    private fun y12() {
+        // C(29:0)=C̅(29:0) + 1
+        val complementedLower30Bits = C.value.inv() and 0x3FFFFFFFU.toULong()
+
+        // Add one to the complemented value
+        val result = complementedLower30Bits + 1U
+
+        // Update C with the result
+        C.value = (C.value and 0xC0000000U.toULong()) or result
+
+        // Update sectionCResList with the new value of C
+        updateListFromBinaryValue(C.value, sectionCResList)
+    }
+
+    private fun y13() {
+        // C(30:16) = C̅(29:15) + 1
+
+        // Получаем значение C̅(29:15)
+        val invertedLower15BitsC = C.value.inv() and 0xFFFF8000UL
+
+        // Добавляем 1 к этому значению
+        val incrementedValue = (invertedLower15BitsC + 1UL)
+
+        // Устанавливаем C(30:16) равным этому новому значению
+        C.value = (C.value and 0x00007FFFUL) or (incrementedValue shl 15)
+
+        // Обновляем список sectionCResList с новым значением C
+        updateListFromBinaryValue(C.value, sectionCResList)
+    }
+
+    private fun y14() {
+        // C(30:16) = C̅(30:16) + 1
+        println("im here")
+        val complementedBits = C.value.inv() and 0x3FFF8000U.toULong()
+
+        // Add one to the complemented value
+        val result = complementedBits + 1U
+
+        // Update bits 16 to 30 of C with the result
+        C.value = (C.value and 0xC0007FFFU.toULong()) or result
+
+        // Update sectionCResList with the new value of C
+        updateListFromBinaryValue(C.value, sectionCResList)
     }
 
     fun runMP() {
@@ -511,9 +575,9 @@ class CommandMarker(
             6 -> {
                 if (x10()) {
                     y13()
-                    a.value = 8
+                    a.value = 7
                 } else {
-                    a.value = 8
+                    a.value = 7
                 }
             }
 
@@ -529,6 +593,7 @@ class CommandMarker(
             8 -> {
                 y0()
                 a.value = 1
+                println("success")
             }
 
             else -> {}
@@ -802,7 +867,8 @@ fun SectionA(
                             size = sizeOfSection,
                             onClick = {
                                 sectionAList[index] = if (item == 0) 1 else 0
-                                resultA10.value = calculateResult(sectionAList, sign = sectionAList[0] == 1)
+                                resultA10.value =
+                                    calculateResult(sectionAList, sign = sectionAList[0] == 1)
                             }
                         )
                     }
@@ -853,7 +919,8 @@ fun SectionB(
                             size = sizeOfSection,
                             onClick = {
                                 sectionBList[index] = if (item == 0) 1 else 0
-                                resultB10.value = calculateResult(sectionBList, sign = sectionBList[0] == 1)
+                                resultB10.value =
+                                    calculateResult(sectionBList, sign = sectionBList[0] == 1)
                             }
                         )
                     }
