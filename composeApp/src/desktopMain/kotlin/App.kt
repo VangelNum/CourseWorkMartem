@@ -2,7 +2,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +52,24 @@ import kotlin.math.pow
 
 
 var run = true
+val A = mutableStateOf(0u)
+val AM = mutableStateOf<UInt>(0U)
+val B = mutableStateOf<UInt>(0U)
+val BM = mutableStateOf<UInt>(0U)
+val C = mutableStateOf<ULong>(0UL)
+val CR = mutableStateOf<Byte>(0)
+
+val sectionAList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
+val sectionBList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
+val sectionAResList = mutableStateListOf<Int>().apply { repeat(32) { add(0) } }
+val sectionBResList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
+val sectionCResList = mutableStateListOf<Int>().apply { repeat(32) { add(0) } }
+val registerCounterResData = mutableStateListOf<Int>().apply { repeat(4) { add(0) } }
+
+val aState = mutableStateOf(0)
+val resultA10 = mutableStateOf((0f))
+val resultB10 = mutableStateOf((0f))
+val resultC10 = mutableStateOf((0f))
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
@@ -60,58 +77,10 @@ var run = true
 fun App() {
     MaterialTheme {
         val selectedMode = remember { mutableStateOf(ExecutionMods.AUTOMATIC) }
-
         val selectedProgram = remember { mutableStateOf(ProgramType.PROGRAM1) }
 
-        val sectionAList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
-        val sectionBList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
-        val sectionAResList = remember { mutableStateListOf<Int>().apply { repeat(32) { add(0) } } }
-        val sectionBResList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
-        val sectionCResList = remember { mutableStateListOf<Int>().apply { repeat(32) { add(0) } } }
-        val registerCounterResData = remember { mutableStateListOf<Int>().apply { repeat(4) { add(0) } } }
-
-        val A = remember { mutableStateOf(0u) }
-        val AM = remember { mutableStateOf<UInt>(0U) }
-        val B = remember { mutableStateOf<UInt>(0U) }
-        val BM = remember { mutableStateOf<UInt>(0U) }
-        val C = remember { mutableStateOf<ULong>(0UL) }
-        val CR = remember { mutableStateOf<Byte>(0) }
-
-        val aState = remember { mutableStateOf(0) }
-
-        val resultA10 = remember {
-            mutableStateOf((0f))
-        }
-
-        val resultB10 = remember {
-            mutableStateOf((0f))
-        }
-
-        val resultC10 = remember {
-            mutableStateOf((0f))
-        }
-
-//        val run = remember {
-//            mutableStateOf(true)
-//        }
-
         val marker = CommandMarker(
-            A,
-            AM,
-            B,
-            BM,
-            C,
-            CR,
-            sectionAList,
-            sectionBList,
-            sectionAResList,
-            sectionBResList,
-            sectionCResList,
-            registerCounterResData,
-            aState,
-            resultA10,
-            resultB10,
-            resultC10
+            aState
         )
 
         Row(
@@ -133,7 +102,10 @@ fun App() {
                             .verticalScroll(stateVertical)
                     )
                 } else {
-                    Column(modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp).verticalScroll(rememberScrollState())) {
+                    Column(
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
                         Image(
                             painterResource(Res.drawable.UAOA),
                             null
@@ -248,21 +220,81 @@ fun App() {
                                     A.value = getValueDouble(sectionAList)
                                     B.value = getValueDouble(sectionBList)
                                     BM.value = B.value
+                                    a_out[0] = true
+                                    X[0] = true
                                     testValue.value = 1
                                 }
-                                marker.runMP()
-                                val sign =
-                                    (((C.value shr 31) % 2UL) == 1UL && ((C.value shr 30) % 2UL) == 0UL)
+                                if (selectedProgram.value == ProgramType.PROGRAM1) {
+                                   marker.runMP()
+                                } else {
+                                    startUAOA()
+                                }
+                                //marker.runMP()
+                                val sign = (((C.value shr 31) % 2UL) == 1UL && ((C.value shr 30) % 2UL) == 0UL)
                                 resultC10.value = calculateFinalResult(sectionCResList, sign)
                             }
                         }, onClearClick = {
-                            marker.clear(testValue)
+                            clearAll(testValue)
                         })
                     }
                 }
             }
         }
     }
+}
+
+fun clearAll(testValue: MutableState<Int>) {
+    for (i in sectionAList.indices) {
+        sectionAList[i] = 0
+    }
+    for (i in sectionBList.indices) {
+        sectionBList[i] = 0
+    }
+    for (i in sectionAResList.indices) {
+        sectionAResList[i] = 0
+    }
+    for (i in sectionBResList.indices) {
+        sectionBResList[i] = 0
+    }
+    for (i in sectionCResList.indices) {
+        sectionCResList[i] = 0
+    }
+    for (i in registerCounterResData.indices) {
+        registerCounterResData[i] = 0
+    }
+    resultA10.value = 0f
+    resultB10.value = 0f
+    resultC10.value = 0f
+    A.value = 0u
+    AM.value = 0U
+    B.value = 0u
+    BM.value = 0U
+    C.value = 0u
+    CR.value = 0
+    aState.value = 0
+    run = true
+    testValue.value = 0
+
+    Q.clear()
+    repeat(4) { Q.add(false) }
+
+    D_out.clear()
+    repeat(4) { D_out.add(false) }
+
+    a_out.clear()
+    repeat(9) { a_out.add(false) }
+
+    T.clear()
+    repeat(24) { T.add(false) }
+
+    Y.clear()
+    repeat(14) { Y.add(false) }
+
+    X.clear()
+    repeat(11) { X.add(false) }
+
+    X_PLY.clear()
+    repeat(2) { X_PLY.add(false) }
 }
 
 fun calculateResult(tableData: List<Int>, sign: Boolean): Float {
@@ -299,239 +331,9 @@ fun getValueDouble(
     return binaryIntValue.toUInt()
 }
 
-private fun x0(): Boolean {
-    return run
-}
-
 class CommandMarker(
-    private val A: MutableState<UInt>,
-    private val AM: MutableState<UInt>,
-    private val B: MutableState<UInt>,
-    private val BM: MutableState<UInt>,
-    private val C: MutableState<ULong>,
-    private val CR: MutableState<Byte>,
-    private val sectionAList: SnapshotStateList<Int>,
-    private val sectionBList: SnapshotStateList<Int>,
-    private val sectionAResList: SnapshotStateList<Int>,
-    private val sectionBResList: SnapshotStateList<Int>,
-    private val sectionCResList: SnapshotStateList<Int>,
-    private val registerCounterResData: SnapshotStateList<Int>,
-    private val a: MutableState<Int>,
-    private val resultA10: MutableState<Float>,
-    private val resultB10: MutableState<Float>,
-    private var resultC10: MutableState<Float>
+    private val a: MutableState<Int>
 ) {
-
-    private fun x0(): Boolean {
-        return run
-    }
-
-    private fun x1(): Boolean {
-        //A=0
-        return A.value == 0U
-    }
-
-    private fun x2(): Boolean {
-        //B=0
-        return B.value == 0U
-    }
-
-    private fun x3(): Boolean {
-        //A(15) == 0
-        return (((A.value shr 15) % 2U) == 1U)
-    }
-
-    private fun x4(): Boolean {
-        //B(0)
-        return (BM.value % 2U == 1U)
-    }
-
-    private fun x5(): Boolean {
-        //B(0) ⊕ B(1)
-        val b0 = (BM.value % 2U == 1U) // B(0)
-        val b1 = (((BM.value shr 1) % 2U) == 1U) // B(1)
-        //Операция XOR возвращает true (или 1), если один из операндов равен true (или 1), но не оба.
-        val result = b0 xor b1
-        return result
-    }
-
-    private fun x6(): Boolean {
-        // B(1)
-        return (((BM.value shr 1) % 2U) == 1U)
-    }
-
-    private fun x7(): Boolean {
-        // CR = 0
-        return CR.value == 0.toByte()
-    }
-
-    private fun x8(): Boolean {
-        // C(31)
-        return (((C.value shr 31) % 2UL) == 1UL)
-    }
-
-    private fun x9(): Boolean {
-        // C(14)
-        return (((C.value shr 14) % 2UL) == 1UL)
-    }
-
-    private fun x10(): Boolean {
-        // C(31)
-        return (((C.value shr 31) % 2UL) == 1UL)
-    }
-
-    private fun updateListFromBinaryValue(value: ULong, list: MutableList<Int>) {
-        val binaryString = value.toString(2)
-
-        var i = list.size - 1
-        var j = binaryString.length - 1
-
-        while (i >= 0 && j >= 0) {
-            list[i] = binaryString[j].toString().toInt()
-            i--
-            j--
-        }
-    }
-
-    private fun updateListFromByteValue(value: Byte, list: MutableList<Int>) {
-        val binaryString = value.toString(2).padStart(4, '0')
-        binaryString.forEachIndexed { index, char ->
-            list[index] = char.toString().toInt()
-        }
-    }
-
-    private fun yStop() {
-        run = false
-    }
-
-    private fun y0() {
-        // Reset C to 0
-        C.value = 0UL
-        updateListFromBinaryValue(C.value, sectionCResList)
-    }
-
-    private fun y1() {
-        // Set CR to 15
-        CR.value = 15
-        updateListFromByteValue(CR.value, registerCounterResData)
-    }
-
-    private fun y2() {
-        // Set AM(31:30) to A(15) A(15)
-        val bit15 = (A.value shr 15) % 2U
-        val bit31 = bit15.shl(31)
-        val bit30 = bit15.shl(30)
-        AM.value = AM.value or bit31 or bit30
-        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
-    }
-
-    private fun y3() {
-        // AM(29:15): = 0
-        AM.value = AM.value and 0xC0007FFFU
-        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
-    }
-
-    private fun y4() {
-        // AM(14:0) := A(14:0)
-        val lower15BitsA = A.value and 0x7FFFU
-        AM.value = (AM.value and 0xFFFF8000U) or lower15BitsA
-        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
-    }
-
-    private fun y5() {
-        // AM(29:15):=A̅M̅(29:15)
-        val invertedUpper15BitsAM = AM.value.inv() and 0xFFFF8000U
-        AM.value = (AM.value and 0x7FFFU) or invertedUpper15BitsAM
-        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
-    }
-
-    private fun y6() {
-        // C:=C+A̅M̅+1
-        // Calculate inverted A̅M̅
-        val sum = C.value + (AM.value.inv().toULong() + 1UL)
-
-        // Update C with the sum
-        C.value = sum
-
-        // Update the list sectionCResList
-        updateListFromBinaryValue(C.value, sectionCResList)
-    }
-
-    private fun y7() {
-        // AM:=L1(AM.0)
-        // Shift bits of AM one position to the left
-        val shiftedAM = (AM.value shl 1)
-
-        // Set the least significant bit of shiftedAM to 0
-        val newAM = shiftedAM and 0xFFFFFFFEU
-        // Update AM
-        AM.value = newAM
-        // Update sectionAResList with the new value of AM
-        updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
-    }
-
-    private fun y8() {
-        // Сдвигаем все биты на одну позицию вправо и добавляем слева 0
-        BM.value = BM.value shr 1
-        updateListFromBinaryValue(BM.value.toULong(), sectionBResList)
-    }
-
-    private fun y9() {
-        CR.value = (CR.value - 1).toByte()
-        updateListFromByteValue(CR.value, registerCounterResData)
-    }
-
-    private fun y10() {
-        // C:=C+AM
-        val result = C.value + AM.value.toULong()
-        C.value = result
-        updateListFromBinaryValue(C.value, sectionCResList)
-    }
-
-    private fun y11() {
-        // C(29:0)=C̅(29:0) + 1
-        val complementedLower30Bits = C.value.inv() and 0x3FFFFFFFU.toULong()
-
-        // Add one to the complemented value
-        val result = complementedLower30Bits + 1U
-
-        // Update C with the result
-        C.value = (C.value and 0xC0000000U.toULong()) or result
-
-        // Update sectionCResList with the new value of C
-        updateListFromBinaryValue(C.value, sectionCResList)
-    }
-
-    private fun y12() {
-        // Получаем комплемент верхних 15 бит C(29:15)
-//        val complementedBits = C.value.inv() and 0x3FFF8000U.toULong()
-//
-//        // Добавляем к комплементу единицу
-//        val result = complementedBits + 1U
-//
-//        // Обновляем биты с 16 по 30 переменной C результатом
-//        C.value = (C.value and 0xC0007FFFU.toULong()) or result
-//
-//        // Обновляем sectionCResList новым значением C
-//        updateListFromBinaryValue(C.value, sectionCResList)
-    }
-
-
-    private fun y13() {
-        // C(30:16) = C̅(30:16) + 1
-        println("im here")
-        val complementedBits = C.value.inv() and 0x3FFF8000U.toULong()
-
-        // Add one to the complemented value
-        val result = complementedBits + 1U
-
-        // Update bits 16 to 30 of C with the result
-        C.value = (C.value and 0xC0007FFFU.toULong()) or result
-
-        // Update sectionCResList with the new value of C
-        updateListFromBinaryValue(C.value, sectionCResList)
-    }
-
     fun runMP() {
         when (a.value) {
             0 -> {
@@ -638,39 +440,6 @@ class CommandMarker(
 
             else -> {}
         }
-    }
-
-    fun clear(testValue: MutableState<Int>) {
-        for (i in sectionAList.indices) {
-            sectionAList[i] = 0
-        }
-        for (i in sectionBList.indices) {
-            sectionBList[i] = 0
-        }
-        for (i in sectionAResList.indices) {
-            sectionAResList[i] = 0
-        }
-        for (i in sectionBResList.indices) {
-            sectionBResList[i] = 0
-        }
-        for (i in sectionCResList.indices) {
-            sectionCResList[i] = 0
-        }
-        for (i in registerCounterResData.indices) {
-            registerCounterResData[i] = 0
-        }
-        resultA10.value = 0f
-        resultB10.value = 0f
-        resultC10.value = 0f
-        A.value = 0u
-        AM.value = 0U
-        B.value = 0u
-        BM.value = 0U
-        C.value = 0u
-        CR.value = 0
-        a.value = 0
-        run = true
-        testValue.value = 0
     }
 }
 
