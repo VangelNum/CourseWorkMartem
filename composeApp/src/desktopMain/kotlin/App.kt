@@ -2,6 +2,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,11 +27,9 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,11 +44,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import courseworkmatmem.composeapp.generated.resources.Res
-import courseworkmatmem.composeapp.generated.resources.endchema
+import courseworkmatmem.composeapp.generated.resources.UAOA
+import courseworkmatmem.composeapp.generated.resources.pngschema
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.pow
+
+
+var run = true
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
@@ -58,13 +61,14 @@ fun App() {
     MaterialTheme {
         val selectedMode = remember { mutableStateOf(ExecutionMods.AUTOMATIC) }
 
+        val selectedProgram = remember { mutableStateOf(ProgramType.PROGRAM1) }
+
         val sectionAList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
         val sectionBList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
         val sectionAResList = remember { mutableStateListOf<Int>().apply { repeat(32) { add(0) } } }
         val sectionBResList = remember { mutableStateListOf<Int>().apply { repeat(16) { add(0) } } }
         val sectionCResList = remember { mutableStateListOf<Int>().apply { repeat(32) { add(0) } } }
-        val registerCounterResData =
-            remember { mutableStateListOf<Int>().apply { repeat(4) { add(0) } } }
+        val registerCounterResData = remember { mutableStateListOf<Int>().apply { repeat(4) { add(0) } } }
 
         val A = remember { mutableStateOf(0u) }
         val AM = remember { mutableStateOf<UInt>(0U) }
@@ -73,7 +77,7 @@ fun App() {
         val C = remember { mutableStateOf<ULong>(0UL) }
         val CR = remember { mutableStateOf<Byte>(0) }
 
-        val aState = remember { mutableStateOf(1) }
+        val aState = remember { mutableStateOf(0) }
 
         val resultA10 = remember {
             mutableStateOf((0f))
@@ -83,9 +87,13 @@ fun App() {
             mutableStateOf((0f))
         }
 
-        val run = remember {
-            mutableStateOf(true)
+        val resultC10 = remember {
+            mutableStateOf((0f))
         }
+
+//        val run = remember {
+//            mutableStateOf(true)
+//        }
 
         val marker = CommandMarker(
             A,
@@ -103,7 +111,7 @@ fun App() {
             aState,
             resultA10,
             resultB10,
-            run
+            resultC10
         )
 
         Row(
@@ -114,17 +122,29 @@ fun App() {
                 modifier = Modifier.width(600.dp)
             ) {
                 val stateVertical = rememberScrollState(0)
-                Image(
-                    painterResource(Res.drawable.endchema),
-                    null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
-                        .verticalScroll(stateVertical)
-                )
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-                    CheckBoxStateA(aState)
+                if (selectedProgram.value == ProgramType.PROGRAM1) {
+                    Image(
+                        painterResource(Res.drawable.pngschema),
+                        null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
+                            .verticalScroll(stateVertical)
+                    )
+                } else {
+                    Column(modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp).verticalScroll(rememberScrollState())) {
+                        Image(
+                            painterResource(Res.drawable.UAOA),
+                            null
+                        )
+                        OAUAScreen()
+                    }
+                }
+                if (selectedProgram.value == ProgramType.PROGRAM1) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+                        CheckBoxStateA(aState)
+                    }
                 }
                 VerticalScrollbar(
                     modifier = Modifier.align(Alignment.CenterEnd)
@@ -176,7 +196,7 @@ fun App() {
                 ) {
                     Column {
                         Text("Результат")
-                        ResultSection()
+                        ResultSection(resultC10)
                     }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
@@ -197,7 +217,7 @@ fun App() {
                             shape = RoundedCornerShape(10.dp)
                         ).padding(10.dp)
                     ) {
-                        LevelModeling()
+                        LevelModeling(selectedProgram)
                     }
                     var testValue = remember {
                         mutableStateOf(0)
@@ -211,17 +231,33 @@ fun App() {
                             ).padding(10.dp)
                     ) {
                         CalculationControl(selectedMode, onTackClick = {
-                            if (testValue.value == 0) {
-                                A.value = getValueDouble(sectionAList)
-                                B.value = getValueDouble(sectionBList)
-                                BM.value = B.value
-                                testValue.value = 1
+                            if (selectedMode.value == ExecutionMods.AUTOMATIC) {
+                                while (run) {
+                                    if (testValue.value == 0) {
+                                        A.value = getValueDouble(sectionAList)
+                                        B.value = getValueDouble(sectionBList)
+                                        BM.value = B.value
+                                        testValue.value = 1
+                                    }
+                                    marker.runMP()
+                                    val sign = (((C.value shr 31) % 2UL) == 1UL && ((C.value shr 30) % 2UL) == 0UL)
+                                    resultC10.value = calculateFinalResult(sectionCResList, sign)
+                                }
+                            } else {
+                                if (testValue.value == 0) {
+                                    A.value = getValueDouble(sectionAList)
+                                    B.value = getValueDouble(sectionBList)
+                                    BM.value = B.value
+                                    testValue.value = 1
+                                }
+                                marker.runMP()
+                                val sign =
+                                    (((C.value shr 31) % 2UL) == 1UL && ((C.value shr 30) % 2UL) == 0UL)
+                                resultC10.value = calculateFinalResult(sectionCResList, sign)
                             }
-                            marker.runMP()
-                            run.value = true
                         }, onClearClick = {
                             marker.clear(testValue)
-                        }, buttonCanBeShown = run.value)
+                        })
                     }
                 }
             }
@@ -242,12 +278,29 @@ fun calculateResult(tableData: List<Int>, sign: Boolean): Float {
     }
 }
 
+fun calculateFinalResult(tableData: List<Int>, sign: Boolean): Float {
+    val binaryString = tableData.drop(2).joinToString("")
+    var result = Integer.parseInt(binaryString, 2).toFloat()
+    result /= 2.0.pow(tableData.size - 2).toFloat()
+    return if (sign) {
+        if (result == 0F) {
+            result
+        } else -result
+    } else {
+        result
+    }
+}
+
 fun getValueDouble(
     anyList: SnapshotStateList<Int>
 ): UInt {
     val binaryString = anyList.joinToString("") { it.toString() }
     val binaryIntValue = binaryString.toInt(radix = 2)
     return binaryIntValue.toUInt()
+}
+
+private fun x0(): Boolean {
+    return run
 }
 
 class CommandMarker(
@@ -266,42 +319,34 @@ class CommandMarker(
     private val a: MutableState<Int>,
     private val resultA10: MutableState<Float>,
     private val resultB10: MutableState<Float>,
-    private val run: MutableState<Boolean>
+    private var resultC10: MutableState<Float>
 ) {
 
-    private fun setDgvs(value: UInt, list: SnapshotStateList<Int>) {
-        var valX = value
-        for (col in list.size - 1 downTo 0) {
-            list[col] = (valX % 2UL).toInt()
-            valX = valX shr 1
-        }
+    private fun x0(): Boolean {
+        return run
     }
 
     private fun x1(): Boolean {
-        return run.value
-    }
-
-    private fun x2(): Boolean {
         //A=0
         return A.value == 0U
     }
 
-    private fun x3(): Boolean {
+    private fun x2(): Boolean {
         //B=0
         return B.value == 0U
     }
 
-    private fun x4(): Boolean {
+    private fun x3(): Boolean {
         //A(15) == 0
         return (((A.value shr 15) % 2U) == 1U)
     }
 
-    private fun x5(): Boolean {
+    private fun x4(): Boolean {
         //B(0)
         return (BM.value % 2U == 1U)
     }
 
-    private fun x6(): Boolean {
+    private fun x5(): Boolean {
         //B(0) ⊕ B(1)
         val b0 = (BM.value % 2U == 1U) // B(0)
         val b1 = (((BM.value shr 1) % 2U) == 1U) // B(1)
@@ -310,36 +355,29 @@ class CommandMarker(
         return result
     }
 
-    private fun x7(): Boolean {
+    private fun x6(): Boolean {
         // B(1)
         return (((BM.value shr 1) % 2U) == 1U)
     }
 
-    private fun x8(): Boolean {
+    private fun x7(): Boolean {
         // CR = 0
         return CR.value == 0.toByte()
     }
 
-    private fun x9(): Boolean {
+    private fun x8(): Boolean {
         // C(31)
         return (((C.value shr 31) % 2UL) == 1UL)
     }
 
-    private fun x10(): Boolean {
+    private fun x9(): Boolean {
         // C(14)
         return (((C.value shr 14) % 2UL) == 1UL)
     }
 
-    private fun x11(): Boolean {
+    private fun x10(): Boolean {
         // C(31)
-        println(C.value)
-        val result = ((C.value shr 31) % 2UL) == 1UL
-        println(result)
         return (((C.value shr 31) % 2UL) == 1UL)
-    }
-
-    private fun y0() {
-        run.value = false
     }
 
     private fun updateListFromBinaryValue(value: ULong, list: MutableList<Int>) {
@@ -362,19 +400,23 @@ class CommandMarker(
         }
     }
 
-    private fun y1() {
+    private fun yStop() {
+        run = false
+    }
+
+    private fun y0() {
         // Reset C to 0
         C.value = 0UL
         updateListFromBinaryValue(C.value, sectionCResList)
     }
 
-    private fun y2() {
+    private fun y1() {
         // Set CR to 15
         CR.value = 15
         updateListFromByteValue(CR.value, registerCounterResData)
     }
 
-    private fun y3() {
+    private fun y2() {
         // Set AM(31:30) to A(15) A(15)
         val bit15 = (A.value shr 15) % 2U
         val bit31 = bit15.shl(31)
@@ -383,39 +425,39 @@ class CommandMarker(
         updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
     }
 
-    private fun y4() {
+    private fun y3() {
         // AM(29:15): = 0
         AM.value = AM.value and 0xC0007FFFU
         updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
     }
 
-    private fun y5() {
+    private fun y4() {
         // AM(14:0) := A(14:0)
         val lower15BitsA = A.value and 0x7FFFU
         AM.value = (AM.value and 0xFFFF8000U) or lower15BitsA
         updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
     }
 
-    private fun y6() {
+    private fun y5() {
         // AM(29:15):=A̅M̅(29:15)
         val invertedUpper15BitsAM = AM.value.inv() and 0xFFFF8000U
         AM.value = (AM.value and 0x7FFFU) or invertedUpper15BitsAM
         updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
     }
 
-    private fun y7() {
+    private fun y6() {
         // C:=C+A̅M̅+1
         // Calculate inverted A̅M̅
-        val invertedAM = AM.value.inv()
-        // Add 1 to invertedAM
-        val invertedAMPlusOne = (invertedAM + 1U)
-        // Add invertedAMPlusOne to C
-        C.value = C.value + invertedAMPlusOne.toULong()
-        // Update sectionCResList with the new value of C
+        val sum = C.value + (AM.value.inv().toULong() + 1UL)
+
+        // Update C with the sum
+        C.value = sum
+
+        // Update the list sectionCResList
         updateListFromBinaryValue(C.value, sectionCResList)
     }
 
-    private fun y8() {
+    private fun y7() {
         // AM:=L1(AM.0)
         // Shift bits of AM one position to the left
         val shiftedAM = (AM.value shl 1)
@@ -428,25 +470,25 @@ class CommandMarker(
         updateListFromBinaryValue(AM.value.toULong(), sectionAResList)
     }
 
-    private fun y9() {
+    private fun y8() {
         // Сдвигаем все биты на одну позицию вправо и добавляем слева 0
         BM.value = BM.value shr 1
         updateListFromBinaryValue(BM.value.toULong(), sectionBResList)
     }
 
-    private fun y10() {
+    private fun y9() {
         CR.value = (CR.value - 1).toByte()
         updateListFromByteValue(CR.value, registerCounterResData)
     }
 
-    private fun y11() {
+    private fun y10() {
         // C:=C+AM
         val result = C.value + AM.value.toULong()
         C.value = result
         updateListFromBinaryValue(C.value, sectionCResList)
     }
 
-    private fun y12() {
+    private fun y11() {
         // C(29:0)=C̅(29:0) + 1
         val complementedLower30Bits = C.value.inv() and 0x3FFFFFFFU.toULong()
 
@@ -460,23 +502,22 @@ class CommandMarker(
         updateListFromBinaryValue(C.value, sectionCResList)
     }
 
-    private fun y13() {
-        // C(30:16) = C̅(29:15) + 1
-
-        // Получаем значение C̅(29:15)
-        val invertedLower15BitsC = C.value.inv() and 0xFFFF8000UL
-
-        // Добавляем 1 к этому значению
-        val incrementedValue = (invertedLower15BitsC + 1UL)
-
-        // Устанавливаем C(30:16) равным этому новому значению
-        C.value = (C.value and 0x00007FFFUL) or (incrementedValue shl 15)
-
-        // Обновляем список sectionCResList с новым значением C
-        updateListFromBinaryValue(C.value, sectionCResList)
+    private fun y12() {
+        // Получаем комплемент верхних 15 бит C(29:15)
+//        val complementedBits = C.value.inv() and 0x3FFF8000U.toULong()
+//
+//        // Добавляем к комплементу единицу
+//        val result = complementedBits + 1U
+//
+//        // Обновляем биты с 16 по 30 переменной C результатом
+//        C.value = (C.value and 0xC0007FFFU.toULong()) or result
+//
+//        // Обновляем sectionCResList новым значением C
+//        updateListFromBinaryValue(C.value, sectionCResList)
     }
 
-    private fun y14() {
+
+    private fun y13() {
         // C(30:16) = C̅(30:16) + 1
         println("im here")
         val complementedBits = C.value.inv() and 0x3FFF8000U.toULong()
@@ -493,82 +534,91 @@ class CommandMarker(
 
     fun runMP() {
         when (a.value) {
-            1 -> {
-                if (x1()) {
-                    if (x2()) {
-                        y1()
-                        a.value = 8
+            0 -> {
+                if (x0()) {
+                    if (x1()) {
+                        y0()
+                        a.value = 7
                     } else {
-                        if (x3()) {
-                            y1()
-                            a.value = 8
+                        if (x2()) {
+                            y0()
+                            a.value = 7
                         } else {
+                            y0()
                             y1()
                             y2()
                             y3()
                             y4()
-                            y5()
-                            a.value = 2
+                            a.value = 1
                         }
                     }
                 } else {
-                    a.value = 1
+                    a.value = 0
+                }
+            }
+
+            1 -> {
+                if (x3()) {
+                    y5()
+                    a.value = 2
+                } else {
+                    a.value = 2
                 }
             }
 
             2 -> {
                 if (x4()) {
                     y6()
+                    y7()
                     a.value = 3
                 } else {
+                    y7()
                     a.value = 3
                 }
             }
 
             3 -> {
                 if (x5()) {
+                    if (x6()) {
+                        y6()
+                        y7()
+                        y8()
+                        y9()
+                        a.value = 4
+                    } else {
+                        y10()
+                        y7()
+                        y8()
+                        y9()
+                        a.value = 4
+                    }
+                } else {
                     y7()
                     y8()
-                    a.value = 4
-                } else {
-                    y8()
+                    y9()
                     a.value = 4
                 }
             }
 
             4 -> {
-                if (x6()) {
-                    if (x7()) {
-                        y7()
-                        y8()
-                        y9()
-                        y10()
+                if (x7()) {
+                    if (x8()) {
+                        y11()
                         a.value = 5
                     } else {
-                        y11()
-                        y8()
-                        y9()
-                        y10()
                         a.value = 5
                     }
                 } else {
-                    y8()
-                    y9()
-                    y10()
-                    a.value = 5
+                    a.value = 3
                 }
             }
 
             5 -> {
-                if (x8()) {
-                    if (x9()) {
-                        y12()
-                        a.value = 6
-                    } else {
-                        a.value = 6
-                    }
+                if (x9()) {
+                    y12()
+                    a.value = 6
                 } else {
-                    a.value = 4
+                    a.value = 6
                 }
             }
 
@@ -582,18 +632,8 @@ class CommandMarker(
             }
 
             7 -> {
-                if (x11()) {
-                    y14()
-                    a.value = 8
-                } else {
-                    a.value = 8
-                }
-            }
-
-            8 -> {
-                y0()
-                a.value = 1
-                println("success")
+                yStop()
+                a.value = 0
             }
 
             else -> {}
@@ -621,30 +661,31 @@ class CommandMarker(
         }
         resultA10.value = 0f
         resultB10.value = 0f
+        resultC10.value = 0f
         A.value = 0u
         AM.value = 0U
         B.value = 0u
         BM.value = 0U
         C.value = 0u
         CR.value = 0
-        a.value = 1
-        run.value = true
+        a.value = 0
+        run = true
         testValue.value = 0
     }
 }
 
 @Composable
-fun LevelModeling() {
-    var selectedMode by remember { mutableStateOf(ProgramType.PROGRAM1) }
-
+fun LevelModeling(
+    selectedProgram: MutableState<ProgramType>
+) {
     Column {
         Text("Уровень моделирования ОУ")
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             RadioButton(
-                selected = selectedMode == ProgramType.PROGRAM1,
-                onClick = { selectedMode = ProgramType.PROGRAM1 }
+                selected = selectedProgram.value == ProgramType.PROGRAM1,
+                onClick = { selectedProgram.value = ProgramType.PROGRAM1 }
             )
             Text("Микропрограмма")
         }
@@ -653,8 +694,8 @@ fun LevelModeling() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             RadioButton(
-                selected = selectedMode == ProgramType.PROGRAM2,
-                onClick = { selectedMode = ProgramType.PROGRAM2 }
+                selected = selectedProgram.value == ProgramType.PROGRAM2,
+                onClick = { selectedProgram.value = ProgramType.PROGRAM2 }
             )
             Text("Взаимодействие УА и ОА")
         }
@@ -692,7 +733,6 @@ fun CalculationControl(
     selectedMode: MutableState<ExecutionMods>,
     onTackClick: () -> Unit,
     onClearClick: () -> Unit,
-    buttonCanBeShown: Boolean
 ) {
     Column {
         Text("Управление вычислением")
@@ -700,7 +740,11 @@ fun CalculationControl(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (selectedMode.value == ExecutionMods.AUTOMATIC) {
-                ElevatedButton(onClick = {}, shape = RoundedCornerShape(4.dp)) {
+                ElevatedButton(
+                    onClick = onTackClick,
+                    shape = RoundedCornerShape(4.dp),
+                    enabled = run
+                ) {
                     Text("Пуск")
                 }
             }
@@ -708,7 +752,7 @@ fun CalculationControl(
                 ElevatedButton(
                     onClick = onTackClick,
                     shape = RoundedCornerShape(4.dp),
-                    enabled = buttonCanBeShown
+                    enabled = run
                 ) {
                     Text("Такт")
                 }
@@ -748,10 +792,7 @@ fun CounterRegister(
 }
 
 @Composable
-fun ResultSection() {
-    val result by remember {
-        mutableStateOf("")
-    }
+fun ResultSection(resultC10: MutableState<Float>) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -762,7 +803,7 @@ fun ResultSection() {
         Text("10", fontSize = 10.sp)
         Text(" = ")
         BasicTextField(
-            value = result,
+            value = "%.10f".format(resultC10.value),
             onValueChange = {},
             modifier = Modifier.width(200.dp)
                 .border(0.5.dp, Color.Black, shape = RoundedCornerShape(12.dp)).padding(6.dp)
@@ -776,43 +817,49 @@ fun CheckBoxStateA(a: MutableState<Int>) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a1")
+            Text("A0")
+            Checkbox(checked = a.value == 0, onCheckedChange = {})
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("A1")
             Checkbox(checked = a.value == 1, onCheckedChange = {})
         }
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a2")
+            Text("A2")
             Checkbox(checked = a.value == 2, onCheckedChange = {})
         }
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a3")
+            Text("A3")
             Checkbox(checked = a.value == 3, onCheckedChange = {})
         }
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a4")
+            Text("A4")
             Checkbox(checked = a.value == 4, onCheckedChange = {})
         }
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a5")
+            Text("A5")
             Checkbox(checked = a.value == 5, onCheckedChange = {})
         }
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a6")
+            Text("A6")
             Checkbox(checked = a.value == 6, onCheckedChange = {})
         }
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("a7")
+            Text("A7")
             Checkbox(checked = a.value == 7, onCheckedChange = {})
         }
     }
