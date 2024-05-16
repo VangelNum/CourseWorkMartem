@@ -1,4 +1,4 @@
-fun yStop() {
+fun endMP() {
     run.value = false
 }
 

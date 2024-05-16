@@ -110,7 +110,7 @@ fun App() {
                             painterResource(Res.drawable.UAOA),
                             null
                         )
-                        OAUAScreen()
+                        OAUACheckbox()
                     }
                 }
                 if (selectedProgram.value == ProgramType.PROGRAM1) {
@@ -206,8 +206,8 @@ fun App() {
                             if (selectedMode.value == ExecutionMods.AUTOMATIC) {
                                 while (run.value) {
                                     if (testValue.value == 0) {
-                                        A.value = getValueDouble(sectionAList)
-                                        B.value = getValueDouble(sectionBList)
+                                        A.value = getInitialValue(sectionAList)
+                                        B.value = getInitialValue(sectionBList)
                                         BM.value = B.value
                                         a_out[0] = true
                                         X[0] = true
@@ -218,7 +218,7 @@ fun App() {
                                     } else {
                                         if (run.value) {
                                             if (!startUAOA()) {
-                                                yStop()
+                                                endMP()
                                             }
                                         }
                                     }
@@ -227,8 +227,8 @@ fun App() {
                                 }
                             } else {
                                 if (testValue.value == 0) {
-                                    A.value = getValueDouble(sectionAList)
-                                    B.value = getValueDouble(sectionBList)
+                                    A.value = getInitialValue(sectionAList)
+                                    B.value = getInitialValue(sectionBList)
                                     BM.value = B.value
                                     a_out[0] = true
                                     X[0] = true
@@ -239,7 +239,7 @@ fun App() {
                                 } else {
                                     if (run.value) {
                                         if (!startUAOA()) {
-                                            yStop()
+                                            endMP()
                                         }
                                     }
                                 }
@@ -307,7 +307,7 @@ fun clearAll(testValue: MutableState<Int>) {
     repeat(11) { X.add(false) }
 
     X_PLY.clear()
-    repeat(2) { X_PLY.add(false) }
+    repeat(3) { X_PLY.add(false) }
 }
 
 fun calculateResult(tableData: List<Int>, sign: Boolean): Float {
@@ -336,7 +336,7 @@ fun calculateFinalResult(tableData: List<Int>, sign: Boolean): Float {
     }
 }
 
-fun getValueDouble(
+fun getInitialValue(
     anyList: SnapshotStateList<Int>
 ): UInt {
     val binaryString = anyList.joinToString("") { it.toString() }
@@ -447,7 +447,7 @@ class CommandMarker(
             }
 
             7 -> {
-                yStop()
+                endMP()
                 a.value = 0
             }
 
