@@ -20,15 +20,26 @@ val X = mutableStateListOf<Boolean>().apply { repeat(11) { add(false) } }
 val X_PLY = mutableStateListOf<Boolean>().apply { repeat(2) { add(false) } }
 
 fun PLY() {
+    println("PLY START")
     X_PLY[0] = X[5]
     X_PLY[1] = X[6]
+    X_PLY.forEach {
+        print("$it ")
+    }
 }
 
 fun PS() {
-    Q = D_out
+    println("PS START")
+    Q.clear()
+    Q.addAll(D_out)
+    Q.forEach {
+        print("$it ")
+    }
+    println()
 }
 
 fun DCH() {
+    println("DCH START")
     var a = 0
     if (Q[0]) a += 1
     if (Q[1]) a += 2
@@ -36,9 +47,13 @@ fun DCH() {
     if (Q[3]) a += 8
     a_out.fill(false)
     a_out[a] = true
+
+    println("State after DCH: $a")
+    println()
 }
 
 fun OU_T() {
+    println("OUT_T START")
     T.fill(false)
     if (t0()) T[0] = true
     if (t1()) T[1] = true
@@ -64,42 +79,16 @@ fun OU_T() {
     if (t21()) T[21] = true
     if (t22()) T[22] = true
     if (t23()) T[23] = true
+    println("T AFTER REF")
+    T.forEach {
+        print("$it ")
+    }
+    println()
 }
 
-fun t0(): Boolean = a_out[0] && !X[0]
-fun t1(): Boolean = a_out[0] && X[0] && X[1]
-fun t2(): Boolean = a_out[0] && X[0] && !X[1] && X[2]
-fun t3(): Boolean = a_out[0] && X[0] && !X[1] && !X[2]
-
-fun t4(): Boolean = a_out[1] && X[3]
-fun t5(): Boolean = a_out[1] && !X[3] && X[4]
-fun t6(): Boolean = a_out[1] && !X[3] && !X[4]
-
-fun t7(): Boolean = a_out[2] && X[4]
-fun t8(): Boolean = a_out[2] && !X[4]
-
-fun t9(): Boolean = a_out[3] && !X_PLY[0]
-fun t10(): Boolean = a_out[3] && X_PLY[0] && X_PLY[1]
-fun t11(): Boolean = a_out[3] && X_PLY[0] && !X_PLY[1]
-
-fun t12(): Boolean = a_out[4] && !X[7] && !X[5]
-fun t13(): Boolean = a_out[4] && !X[7] && X[5] && X[6]
-fun t14(): Boolean = a_out[4] && !X[7] && X[5] && !X[6]
-
-fun t15(): Boolean = a_out[4] && X[7] && X[8]
-fun t16(): Boolean = a_out[4] && X[7] && !X[8] && X[9]
-fun t17(): Boolean = a_out[4] && X[7] && !X[8] && !X[9] && X[10]
-fun t18(): Boolean = a_out[4] && X[7] && !X[8] && !X[9] && !X[10]
-
-fun t19(): Boolean = a_out[5] && X[9]
-fun t20(): Boolean = a_out[5] && !X[9] && X[10]
-fun t21(): Boolean = a_out[5] && !X[9] && !X[10]
-
-fun t22(): Boolean = a_out[6] && X[10]
-fun t23(): Boolean = a_out[6] && !X[10]
-
 fun CSY() {
-    T.fill(false)
+    println("CSY START")
+    Y.fill(false)
 
     if (T[1] || T[2]) {
         Y[0] = true
@@ -210,6 +199,12 @@ fun CSY() {
     if (T[22]) {
         yStop()
     }
+
+    println("IN CSY Y")
+    Y.forEach {
+        print("$it ")
+    }
+    println()
 }
 
 fun OA() {
@@ -220,10 +215,10 @@ fun OA() {
         if (Y[4]) y4()
         if (Y[5]) y5()
         if (Y[6]) y6()
-        if (Y[7]) y7()
-        if (Y[8]) y8()
-        if (Y[9]) y9()
-        if (Y[10]) y10()
+    if (Y[10]) y10()
+    if (Y[7]) y7()
+    if (Y[8]) y8()
+    if (Y[9]) y9()
         if (Y[11]) y11()
         if (Y[12]) y12()
         if (Y[13]) y13()
@@ -241,13 +236,48 @@ fun OA() {
         X[10] = x10()
 }
 
-fun CSD() {
+fun t0(): Boolean = a_out[0] && !X[0]
+fun t1(): Boolean = a_out[0] && X[0] && X[1]
+fun t2(): Boolean = a_out[0] && X[0] && !X[1] && X[2]
+fun t3(): Boolean = a_out[0] && X[0] && !X[1] && !X[2]
 
+fun t4(): Boolean = a_out[1] && X[3]
+fun t5(): Boolean = a_out[1] && !X[3] && X[4]
+fun t6(): Boolean = a_out[1] && !X[3] && !X[4]
+
+fun t7(): Boolean = a_out[2] && X[4]
+fun t8(): Boolean = a_out[2] && !X[4]
+
+fun t9(): Boolean = a_out[3] && !X_PLY[0]
+fun t10(): Boolean = a_out[3] && X_PLY[0] && X_PLY[1]
+fun t11(): Boolean = a_out[3] && X_PLY[0] && !X_PLY[1]
+
+fun t12(): Boolean = a_out[4] && !X[7] && !X[5]
+fun t13(): Boolean = a_out[4] && !X[7] && X[5] && X[6]
+fun t14(): Boolean = a_out[4] && !X[7] && X[5] && !X[6]
+
+fun t15(): Boolean = a_out[4] && X[7] && X[8]
+fun t16(): Boolean = a_out[4] && X[7] && !X[8] && X[9]
+fun t17(): Boolean = a_out[4] && X[7] && !X[8] && !X[9] && X[10]
+fun t18(): Boolean = a_out[4] && X[7] && !X[8] && !X[9] && !X[10]
+
+fun t19(): Boolean = a_out[5] && X[9]
+fun t20(): Boolean = a_out[5] && !X[9] && X[10]
+fun t21(): Boolean = a_out[5] && !X[9] && !X[10]
+
+fun t22(): Boolean = a_out[6] && X[10]
+fun t23(): Boolean = a_out[6] && !X[10]
+
+fun CSD() {
     D_out.fill(false)
-    D_out[0] = T[0] || T[1] || T[5] || T[6] || T[8] || T[11]
-    D_out[1] = T[2] || T[3] || T[4] || T[9] || T[10] || T[11]
-    D_out[2] = T[7] || T[8] || T[9] || T[10] || T[11]
-    D_out[3] = T[12] || T[13] || T[14]
+    D_out[0] = T[0] || T[1] || T[3] || T[5] || T[6] || T[8] || T[11]|| T[10]
+    D_out[1] = T[2] || T[4] || T[10] || T[11] || T[6]
+    D_out[2] = T[7] || T[8] || T[9] || T[12] || T[13] || T[14]
+    D_out[3] = T[23]
+    println("CSD START")
+    D_out.forEach {
+        print("$it ")
+    }
 }
 
 fun isEnd(): Boolean {

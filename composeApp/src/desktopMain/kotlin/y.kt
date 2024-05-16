@@ -118,7 +118,6 @@ fun y12() {
 
 fun y13() {
     // C(30:16) = C̅(30:16) + 1
-    println("im here")
     val complementedBits = C.value.inv() and 0x3FFF8000U.toULong()
 
     // Add one to the complemented value

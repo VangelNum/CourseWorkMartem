@@ -110,9 +110,7 @@ class AppViewModel: ViewModel() {
 
     private fun x11(): Boolean {
         // C(31)
-        println(C.value)
         val result = ((C.value shr 31) % 2UL) == 1UL
-        println(result)
         return (((C.value shr 31) % 2UL) == 1UL)
     }
 
@@ -372,7 +370,6 @@ class AppViewModel: ViewModel() {
             8 -> {
                 y0()
                 _aState.value = 1
-                println("success")
             }
 
             else -> {}
