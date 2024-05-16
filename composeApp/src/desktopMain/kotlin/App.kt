@@ -51,7 +51,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.pow
 
 
-var run = true
+var run = mutableStateOf(true)
 val A = mutableStateOf(0u)
 val AM = mutableStateOf<UInt>(0U)
 val B = mutableStateOf<UInt>(0U)
@@ -62,7 +62,7 @@ val CR = mutableStateOf<Byte>(0)
 val sectionAList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
 val sectionBList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
 val sectionAResList = mutableStateListOf<Int>().apply { repeat(32) { add(0) } }
-val sectionBResList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
+var sectionBResList = mutableStateListOf<Int>().apply { repeat(16) { add(0) } }
 val sectionCResList = mutableStateListOf<Int>().apply { repeat(32) { add(0) } }
 val registerCounterResData = mutableStateListOf<Int>().apply { repeat(4) { add(0) } }
 
@@ -204,14 +204,24 @@ fun App() {
                     ) {
                         CalculationControl(selectedMode, onTackClick = {
                             if (selectedMode.value == ExecutionMods.AUTOMATIC) {
-                                while (run) {
+                                while (run.value) {
                                     if (testValue.value == 0) {
                                         A.value = getValueDouble(sectionAList)
                                         B.value = getValueDouble(sectionBList)
                                         BM.value = B.value
+                                        a_out[0] = true
+                                        X[0] = true
                                         testValue.value = 1
                                     }
-                                    marker.runMP()
+                                    if (selectedProgram.value == ProgramType.PROGRAM1) {
+                                        marker.runMP()
+                                    } else {
+                                        if (run.value) {
+                                            if (!startUAOA()) {
+                                                yStop()
+                                            }
+                                        }
+                                    }
                                     val sign = (((C.value shr 31) % 2UL) == 1UL && ((C.value shr 30) % 2UL) == 0UL)
                                     resultC10.value = calculateFinalResult(sectionCResList, sign)
                                 }
@@ -227,9 +237,12 @@ fun App() {
                                 if (selectedProgram.value == ProgramType.PROGRAM1) {
                                    marker.runMP()
                                 } else {
-                                    startUAOA()
+                                    if (run.value) {
+                                        if (!startUAOA()) {
+                                            yStop()
+                                        }
+                                    }
                                 }
-                                //marker.runMP()
                                 val sign = (((C.value shr 31) % 2UL) == 1UL && ((C.value shr 30) % 2UL) == 0UL)
                                 resultC10.value = calculateFinalResult(sectionCResList, sign)
                             }
@@ -272,7 +285,7 @@ fun clearAll(testValue: MutableState<Int>) {
     C.value = 0u
     CR.value = 0
     aState.value = 0
-    run = true
+    run.value = true
     testValue.value = 0
 
     Q.clear()
@@ -512,7 +525,7 @@ fun CalculationControl(
                 ElevatedButton(
                     onClick = onTackClick,
                     shape = RoundedCornerShape(4.dp),
-                    enabled = run
+                    enabled = run.value
                 ) {
                     Text("Пуск")
                 }
@@ -521,7 +534,7 @@ fun CalculationControl(
                 ElevatedButton(
                     onClick = onTackClick,
                     shape = RoundedCornerShape(4.dp),
-                    enabled = run
+                    enabled = run.value
                 ) {
                     Text("Такт")
                 }

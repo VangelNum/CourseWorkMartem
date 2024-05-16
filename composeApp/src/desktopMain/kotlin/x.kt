@@ -1,6 +1,6 @@
 
 fun x0(): Boolean {
-    return run
+    return run.value
 }
 
 fun x1(): Boolean {
