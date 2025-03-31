@@ -585,7 +585,7 @@ fun ResultSection(resultC10: MutableState<Float>) {
         Text("10", fontSize = 10.sp)
         Text(" = ")
         BasicTextField(
-            value = "%.10f".format(resultC10.value),
+            value = "%.5f".format(resultC10.value),
             onValueChange = {},
             modifier = Modifier.width(200.dp)
                 .border(0.5.dp, Color.Black, shape = RoundedCornerShape(12.dp)).padding(6.dp)
